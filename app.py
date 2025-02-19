@@ -1,5 +1,7 @@
+from flask import Flask, jsonify
 import requests
-import datetime
+
+app = Flask(__name__)
 
 def get_leetcode_daily():
     url = "https://leetcode.com/graphql"
@@ -32,5 +34,7 @@ def get_leetcode_daily():
         return f"Today's ({date}) LeetCode problem: {problem_title}\n{problem_link}"
     else:
         return "Could not fetch today's problem. API error."
-
 print(get_leetcode_daily())
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5000, debug=True) 
