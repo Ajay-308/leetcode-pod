@@ -3,43 +3,43 @@ import requests
 
 app = Flask(__name__)
 
-def get_leetcode_daily():
+def fetch_daily_problem():
     url = "https://leetcode.com/graphql"
-    headers = {
-        "Content-Type": "application/json"
-    }
     query = {
         "query": """
-        query questionOfToday {
+        query dailyCodingChallenge {
           activeDailyCodingChallengeQuestion {
             date
-            link
             question {
               title
+              link
             }
           }
         }
         """
     }
-    
-    response = requests.post(url, json=query, headers=headers)
-    
-    if response.status_code == 200:
+
+    try:
+        response = requests.post(url, json=query)
+        response.raise_for_status()
+
         data = response.json()
         question = data["data"]["activeDailyCodingChallengeQuestion"]
-        date = question["date"]
-        problem_title = question["question"]["title"]
-        problem_link = f"https://leetcode.com{question['link']}"
-        
-        return f"Today's ({date}) LeetCode problem: {problem_title}\n{problem_link}"
-    else:
-        return "Could not fetch today's problem. API error."
-    
-@app.route('/daily_problem', methods=['GET'])
-def daily_problem():
-    return jsonify(get_leetcode_daily())
-   
-# print(get_leetcode_daily())
 
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True) 
+        return {
+            "date": question["date"],
+            "title": question["question"]["title"],
+            "link": f"https://leetcode.com{question['question']['link']}"
+        }
+
+    except (requests.exceptions.RequestException, KeyError, ValueError) as e:
+        return {"error": f"Failed to fetch the problem. {str(e)}"}
+
+@app.route("/daily-problem", methods=["GET"])
+def daily_problem():
+    result = fetch_daily_problem()
+    return jsonify(result)
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000, debug=True)
+    
