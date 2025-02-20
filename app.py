@@ -3,16 +3,16 @@ import requests
 
 app = Flask(__name__)
 
-def fetch_daily_problem():
+def get_leetcode_daily():
     url = "https://leetcode.com/graphql"
     query = {
         "query": """
-        query dailyCodingChallenge {
+        query questionOfToday {
           activeDailyCodingChallengeQuestion {
             date
             question {
               title
-              link
+              titleSlug
             }
           }
         }
@@ -22,24 +22,23 @@ def fetch_daily_problem():
     try:
         response = requests.post(url, json=query)
         response.raise_for_status()
-
         data = response.json()
-        question = data["data"]["activeDailyCodingChallengeQuestion"]
+        question_data = data.get("data", {}).get("activeDailyCodingChallengeQuestion")
+        if not question_data:
+            return {"error": "Failed to fetch the problem. Missing data."}
 
         return {
-            "date": question["date"],
-            "title": question["question"]["title"],
-            "link": f"https://leetcode.com{question['question']['link']}"
+            "date": question_data["date"],
+            "title": question_data["question"]["title"],
+            "link": f"https://leetcode.com/problems/{question_data['question']['titleSlug']}/"
         }
 
     except (requests.exceptions.RequestException, KeyError, ValueError) as e:
         return {"error": f"Failed to fetch the problem. {str(e)}"}
 
-@app.route("/daily-problem", methods=["GET"])
+@app.route('/daily_problem', methods=['GET'])
 def daily_problem():
-    result = fetch_daily_problem()
-    return jsonify(result)
+    return jsonify(get_leetcode_daily())
 
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True)
-    
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5000, debug=True)
